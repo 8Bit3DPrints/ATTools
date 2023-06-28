@@ -1,0 +1,70 @@
+Option Explicit
+
+Sub importData()
+    Dim ws As Worksheet
+    Dim dataFile As Variant
+    
+    ' Set the worksheet to import data into
+    Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+    
+    ' Open file dialog to select the data file
+    With Application.FileDialog(msoFileDialogFilePicker)
+        .Title = "Select Data File"
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xlsx; *.xlsm; *.xls"
+        .AllowMultiSelect = False
+        
+        If .Show = -1 Then ' User selected a file
+            dataFile = .SelectedItems(1)
+        Else ' User canceled the dialog
+            Exit Sub
+        End If
+    End With
+    
+    ' Import data from the selected file
+    On Error Resume Next
+    ws.Cells.ClearContents
+    Err.Clear ' Reset error handling
+    
+    With ws.QueryTables.Add(Connection:= _
+        "OLEDB;Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & dataFile & ";Extended Properties=""Excel 12.0 Xml;HDR=YES""", _
+        Destination:=ws.Range("A1"))
+        .Name = "ImportedData"
+        .FieldNames = True
+        .RowNumbers = False
+        .FillAdjacentFormulas = False
+        .PreserveFormatting = True
+        .RefreshOnFileOpen = False
+        .RefreshStyle = xlInsertDeleteCells
+        .SavePassword = False
+        .SaveData = True
+        .AdjustColumnWidth = True
+        .RefreshPeriod = 0
+        .PreserveColumnInfo = True
+    End With
+End Sub
+
+Sub RunRoutine()
+    ' Show the UserForm
+    UserForm1.Show
+    
+    ' Call the OrganizeValues subroutine to run the routine
+    OrganizeValues
+    
+    ' Close the UserForm
+    Unload UserForm1
+End Sub
+
+Sub ClearContents()
+    Dim ws As Worksheet
+    
+    ' Set the worksheet to clear contents from
+    Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+    
+    ' Clear the contents of all cells
+    On Error Resume Next
+    ws.Cells.ClearContents
+    Err.Clear ' Reset error handling
+End Sub
+
+

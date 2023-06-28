@@ -1,0 +1,259 @@
+Private Sub CommandButton1_Click()
+    importData
+End Sub
+
+Sub importData()
+    Dim dataFile As Variant
+    Dim importRange As Range
+    Dim importData As Workbook, ws As Worksheet
+    Dim lastRow As Long
+    Dim targetRange As Range
+    
+    ' Set the worksheet to import data into
+    Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+    
+    ' Open file dialog to select the data file
+    With Application.FileDialog(msoFileDialogFilePicker)
+        .Title = "Select Data File"
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xlsx; *.xlsm; *.xls"
+        .AllowMultiSelect = False
+        
+        If .Show = -1 Then ' User selected a file
+            dataFile = .SelectedItems(1)
+        Else ' User canceled the dialog
+            Exit Sub
+        End If
+    End With
+    
+    ' Import data from the selected file
+    On Error Resume Next
+    ws.Range("A11").Resize(ws.Rows.Count - 10, ws.Columns.Count).ClearContents
+    On Error GoTo 0
+    
+    ' Open the selected file as a separate workbook
+    Set importData = Workbooks.Open(dataFile)
+    
+    ' Copy the data from the selected file to the destination worksheet
+    With importData.Sheets(1)
+        lastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        Set targetRange = ws.Range("A11").Resize(lastRow, .Columns.Count)
+        targetRange.Value = .Range("A1").Resize(lastRow, .Columns.Count).Value
+    End With
+    
+    ' Close the imported workbook without saving changes
+    importData.Close False
+    
+    ' Update button states after importing data
+    UpdateButtonStates
+    
+    ' Enable the Organize Data button
+    Dim buttonOrganize As Shape
+    Set buttonOrganize = ws.Shapes("CommandButton2")
+    buttonOrganize.OLEFormat.Object.Enabled = True
+End Sub
+
+Private Sub CommandButton2_Click()
+    ' Display a message box to indicate that the process is running
+    MsgBox "Please wait while the data is being organized. Do not close the program.", vbInformation
+
+    ' Reset the flag variable
+    organizeValuesCompletedFlag = False
+
+    ' Schedule the execution of the OrganizeValues subroutine after a brief delay
+    Application.OnTime Now + TimeValue("00:00:02"), "OrganizeValues"
+End Sub
+
+Private Sub CommandButton3_Click()
+    ClearContents
+End Sub
+
+Sub ClearContents()
+    Dim ws As Worksheet
+    Dim answer As Integer
+    
+    ' Prompt user for confirmation
+    answer = MsgBox("This will erase all currently imported data. Are you sure?", vbYesNo + vbQuestion, "Clear All Data")
+    
+    ' If user clicks 'Yes', clear the data
+    If answer = vbYes Then
+        ' Set the worksheet to clear contents from
+        Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+        
+        ' Clear the contents and formatting of all cells
+        On Error Resume Next
+        ws.Cells.Clear
+        Err.Clear ' Reset error handling
+    End If
+    
+    ' Update button states after importing data
+    UpdateButtonStates
+End Sub
+
+Private Sub CommandButton4_Click()
+    SendToExport Me.CommandButton4.Name
+    
+End Sub
+
+Private Sub CommandButton5_Click()
+    SendToExport Me.CommandButton5.Name
+    
+End Sub
+
+Private Sub CommandButton6_Click()
+    SendToExport Me.CommandButton6.Name
+    
+End Sub
+
+Private Sub CommandButton7_Click()
+    SendToExport Me.CommandButton7.Name
+    
+End Sub
+
+Private Sub CommandButton8_Click()
+    SendToExport Me.CommandButton8.Name
+    
+End Sub
+
+Private Sub CommandButton9_Click()
+    SendToExport Me.CommandButton9.Name
+    
+End Sub
+
+Private Sub CommandButton10_Click()
+    SendToExport Me.CommandButton10.Name
+    
+End Sub
+
+Private Sub CommandButton11_Click()
+    SendToExport Me.CommandButton11.Name
+    
+End Sub
+
+Private Sub CommandButton12_Click()
+    SendToExport Me.CommandButton12.Name
+    
+End Sub
+
+Private Sub CommandButton13_Click()
+    SendToExport Me.CommandButton13.Name
+    
+End Sub
+
+Private Sub CommandButton14_Click()
+    SendToExport Me.CommandButton14.Name
+    
+End Sub
+
+Private Sub CommandButton15_Click()
+    SendToExport Me.CommandButton15.Name
+    
+End Sub
+
+Sub SendToExport(buttonName As String)
+    Dim button As Object
+    Dim wsSource As Worksheet
+    Dim wsDest As Worksheet
+    Dim rngSource As Range
+    Dim rngDest As Range
+    Dim lastRowSource As Long
+    Dim lastRowDest As Long
+    Dim buttonCol As Integer
+    
+    ' Get the button that was clicked
+    Set button = ActiveSheet.OLEObjects(buttonName)
+    
+    ' If the button is disabled, show a message and exit the subroutine
+    If Not button.Enabled Then
+        MsgBox "No data to send to the destination sheet.", vbInformation
+        Exit Sub
+    End If
+    
+    ' Set worksheets
+    Set wsSource = ThisWorkbook.Sheets("Import")
+    Set wsDest = ThisWorkbook.Sheets("Export")
+    
+    ' Get the last rows in the source and destination worksheets
+    buttonCol = button.TopLeftCell.column
+    lastRowSource = wsSource.Cells(wsSource.Rows.Count, buttonCol).End(xlUp).Row
+    lastRowDest = IIf(wsDest.Cells(wsDest.Rows.Count, 1).End(xlUp).Row = 1 And wsDest.Cells(1, 1).Value = "", 1, wsDest.Cells(wsDest.Rows.Count, 1).End(xlUp).Row + 2)
+    
+    ' Check if source has data
+    If lastRowSource < 11 Then ' No data in the column
+        MsgBox "No data to send to the destination sheet.", vbInformation
+        Exit Sub
+    End If
+    
+    ' Check if last filled row is greater than or equal to 11 (i.e., there's data to transfer)
+    If lastRowSource >= 11 Then
+        ' Set source and destination ranges
+        Set rngSource = wsSource.Range(wsSource.Cells(11, buttonCol), wsSource.Cells(lastRowSource, buttonCol))
+        
+        If DataExistsInSheet(rngSource, wsDest) Then
+            MsgBox "Data already exists in the destination sheet.", vbInformation
+            Exit Sub
+        End If
+        
+        ' Set rngDest to be the next unfilled row in column 1
+        Set rngDest = wsDest.Cells(lastRowDest, 1)
+        
+        ' Transfer data
+        rngDest.Resize(rngSource.Rows.Count).Value = rngSource.Value
+
+        ' Message for successful transfer
+        MsgBox "Data has been successfully sent to the destination sheet.", vbInformation
+    End If
+    
+    ' Update button states after importing data
+    UpdateButtonStates
+End Sub
+
+Function DataExistsInSheet(rng As Range, ws As Worksheet) As Boolean
+    Dim srcData As Variant
+    Dim destData As Variant
+    Dim srcRow As Long
+    Dim destRow As Long
+    Dim col As Long
+    Dim match As Boolean
+
+    ' Set column widths to 165 pixels
+    ws.Columns("A:Z").ColumnWidth = 23
+    
+    ' Center align every cell on the worksheet
+    ws.Cells.HorizontalAlignment = xlCenter
+
+    ' Check if the source data is a single cell
+    If rng.Cells.Count > 1 Then
+        srcData = rng.Value
+    Else
+        ReDim srcData(1 To 1, 1 To 1)
+        srcData(1, 1) = rng.Value
+    End If
+    
+    ' Check if the destination data is a single cell
+    If ws.Cells(ws.Rows.Count, 1).End(xlUp).Row > 1 Or rng.Columns.Count > 1 Then
+        destData = ws.Cells(1, 1).Resize(ws.Cells(ws.Rows.Count, 1).End(xlUp).Row, rng.Columns.Count).Value
+    Else
+        ReDim destData(1 To 1, 1 To 1)
+        destData(1, 1) = ws.Cells(1, 1).Value
+    End If
+
+    For srcRow = 1 To UBound(srcData, 1)
+        For destRow = 1 To UBound(destData, 1)
+            match = True
+            For col = 1 To UBound(srcData, 2)
+                If srcData(srcRow, col) <> destData(destRow, col) Then
+                    match = False
+                    Exit For
+                End If
+            Next col
+            If match Then Exit For
+        Next destRow
+        If match Then
+            DataExistsInSheet = True
+            Exit Function
+        End If
+    Next srcRow
+
+    DataExistsInSheet = False
+End Function

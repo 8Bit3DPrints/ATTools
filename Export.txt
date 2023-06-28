@@ -1,0 +1,76 @@
+Private Sub Worksheet_Activate()
+    Dim exportSheet As Worksheet
+    Set exportSheet = ThisWorkbook.Worksheets("Export")
+    
+    If WorksheetFunction.CountA(exportSheet.Cells) > 0 Then
+        Me.CommandButton1.Enabled = True ' Enable the Export to Brady Printer button
+        Me.CommandButton2.Enabled = True ' Enable the Clear Data button
+    Else
+        Me.CommandButton1.Enabled = False ' Disable the Export to Brady Printer button
+        Me.CommandButton2.Enabled = False ' Disable the Clear Data button
+    End If
+End Sub
+
+Private Sub CommandButton1_Click()
+    ExportData
+End Sub
+
+Sub ExportData()
+    Dim ws As Worksheet
+    Dim savePath As Variant
+    Dim tempWorkbook As Workbook
+    Dim defaultName As String
+
+    ' Set the worksheet to export data from
+    Set ws = ThisWorkbook.Worksheets("Export") ' Replace "Sheet#" with your actual sheet name
+
+    defaultName = "Job Number - Company Name - Device Types"
+
+    ' Prompt user for save location and filename
+    savePath = Application.GetSaveAsFilename(defaultName, "Excel Files (*.xlsx), *.xlsx") ' Change the file format to Excel (.xlsx)
+
+    ' If the user didn't cancel the dialog
+    If savePath <> False Then
+        Application.ScreenUpdating = False
+        
+        ' Copy the worksheet to a new workbook
+        ws.Copy
+        Set tempWorkbook = ActiveWorkbook
+        
+        ' Save the new workbook in Excel format and close it
+        tempWorkbook.SaveAs savePath, FileFormat:=xlOpenXMLWorkbook ' Use xlOpenXMLWorkbook for Excel format (.xlsx)
+        tempWorkbook.Close SaveChanges:=False
+        
+        Application.ScreenUpdating = True
+    End If
+End Sub
+
+Private Sub CommandButton2_Click()
+    ClearContents
+End Sub
+
+Sub ClearContents()
+    Dim ws As Worksheet
+    Dim answer As Integer
+    
+    ' Prompt user for confirmation
+    answer = MsgBox("This will erase all currently imported data. Are you sure?", vbYesNo + vbQuestion, "Clear All Data")
+    
+    ' If user clicks 'Yes', clear the data
+    If answer = vbYes Then
+        ' Set the worksheet to clear contents from
+        Set ws = ThisWorkbook.Worksheets("Export") ' Replace "Export" with your actual sheet name
+        
+        ' Clear the contents and formatting of all cells
+        On Error Resume Next
+        ws.Cells.Clear
+        Err.Clear ' Reset error handling
+        
+        ' Disable the Export Data button after clearing the data
+        Me.CommandButton1.Enabled = False
+        ' Disable the Clear Data button after clearing the data
+        Me.CommandButton2.Enabled = False
+    End If
+    
+End Sub
+

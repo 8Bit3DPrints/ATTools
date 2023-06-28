@@ -1,0 +1,439 @@
+Option Explicit
+
+Dim buttonsAdded As Boolean
+Dim organizeValuesCompletedFlag As Boolean
+Dim importDataAvailable As Boolean
+Dim organizeDataAvailable As Boolean
+Dim clearDataAvailable As Boolean
+
+Sub OrganizeValues()
+    Dim i As Integer
+    Dim maxProgress As Integer
+    Dim ws As Worksheet
+    Dim dataRange As Range
+    Dim headersRange As Range
+    Dim cell As Range
+    Dim startRow As Long
+    Dim sortRange As Range
+    Dim lastRow As Long
+    Dim wires As Collection
+    Dim cables As Collection
+    Dim devicesDISC As Collection
+    Dim devicesFAN As Collection
+    Dim devicesFU As Collection
+    Dim devicesMDR As Collection
+    Dim devicesMTR As Collection
+    Dim devicesPE As Collection
+    Dim devicesPWS As Collection
+    Dim devicesPX As Collection
+    Dim devicesSOL As Collection
+    Dim devicesTB As Collection
+    Dim processedCells As Collection ' Collection to store processed cell addresses
+    
+    ' Set the worksheet to work with
+    Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+    
+    ' Set dataRange to cover the entire used range of the worksheet
+    Set dataRange = ws.UsedRange
+    Debug.Print "Data range: " & dataRange.Address
+    Set headersRange = ws.Rows(10)
+    Debug.Print "Headers range: " & headersRange.Address
+    
+    ' Check if headers are already in Row 10
+    If Not IsEmpty(headersRange.Cells(1)) Then
+        ' Headers already exist, exclude them from the organization process
+        lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row ' Recalculate the lastRow value
+        Set dataRange = ws.Range("A11:L" & lastRow)
+    Else
+        ' Headers do not exist, set the headers range to Row 10
+        Set headersRange = ws.Rows(10)
+    End If
+    
+    ' Initialize collections
+    Set wires = New Collection
+    Set cables = New Collection
+    Set devicesDISC = New Collection
+    Set devicesFAN = New Collection
+    Set devicesFU = New Collection
+    Set devicesMDR = New Collection
+    Set devicesMTR = New Collection
+    Set devicesPE = New Collection
+    Set devicesPWS = New Collection
+    Set devicesPX = New Collection
+    Set devicesSOL = New Collection
+    Set devicesTB = New Collection
+    
+    ' Initialize the collection to keep track of processed cells
+    Set processedCells = New Collection
+    
+    ' Set the maximum progress value
+    maxProgress = 100
+    
+    ' Show the UserForm
+    UserForm1.Show (False) ' Use Show (False) to keep the form modeless
+    
+    ' Schedule the execution of the OrganizeValuesInBackground subroutine
+    Application.OnTime Now + TimeValue("00:00:01"), "OrganizeValuesInBackground"
+End Sub
+
+Sub OrganizeValuesInBackground()
+    ' Disable screen updating and events for faster execution
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    
+    Dim i As Integer
+    Dim maxProgress As Integer
+    Dim ws As Worksheet
+    Dim dataRange As Range
+    Dim headersRange As Range
+    Dim cell As Range
+    Dim startRow As Long
+    Dim sortRange As Range
+    Dim lastRow As Long
+    Dim wires As Collection
+    Dim cables As Collection
+    Dim devicesDISC As Collection
+    Dim devicesFAN As Collection
+    Dim devicesFU As Collection
+    Dim devicesMDR As Collection
+    Dim devicesMTR As Collection
+    Dim devicesPE As Collection
+    Dim devicesPWS As Collection
+    Dim devicesPX As Collection
+    Dim devicesSOL As Collection
+    Dim devicesTB As Collection
+    Dim processedCells As Collection ' Collection to store processed cell addresses
+    Dim totalCells As Long ' Total number of cells to process
+    
+    ' Set the worksheet to work with
+    Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+    
+    ' Set dataRange to cover the entire used range of the worksheet
+    Set dataRange = ws.UsedRange
+    Debug.Print "Data range: " & dataRange.Address
+    Set headersRange = ws.Rows(10)
+    Debug.Print "Headers range: " & headersRange.Address
+    
+    ' Check if headers are already in Row 10
+    If Not IsEmpty(headersRange.Cells(1)) Then
+        ' Headers already exist, exclude them from the organization process
+        lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row ' Recalculate the lastRow value
+        Set dataRange = ws.Range("A11:L" & lastRow)
+    Else
+        ' Headers do not exist, set the headers range to Row 10
+        Set headersRange = ws.Rows(10)
+    End If
+    
+    ' Initialize collections
+    Set wires = New Collection
+    Set cables = New Collection
+    Set devicesDISC = New Collection
+    Set devicesFAN = New Collection
+    Set devicesFU = New Collection
+    Set devicesMDR = New Collection
+    Set devicesMTR = New Collection
+    Set devicesPE = New Collection
+    Set devicesPWS = New Collection
+    Set devicesPX = New Collection
+    Set devicesSOL = New Collection
+    Set devicesTB = New Collection
+    
+    ' Initialize the collection to keep track of processed cells
+    Set processedCells = New Collection
+    
+    ' Set the maximum progress value
+    maxProgress = 100
+    
+    ' Count the total number of cells to process
+    totalCells = dataRange.Cells.Count
+    
+    ' Show the UserForm
+    UserForm1.Show (False) ' Use Show (False) to keep the form modeless
+    
+    ' Loop through each cell in the data range
+    For Each cell In dataRange
+        Dim cellValue As String
+        cellValue = Trim(CStr(cell.Value)) ' Trim whitespace from cell value
+        Debug.Print "Processing cell " & cell.Address & " with value: " & cellValue
+        
+        ' Skip empty cells
+        If Len(cellValue) = 0 Then
+            GoTo NextIteration
+        End If
+        
+        ' Check if the cell value is a wire (4, 5, or 6 digits or specific patterns)
+        If (IsNumeric(cellValue) And Len(cellValue) >= 4) _
+            Or (cellValue Like "*L##" Or cellValue Like "*L#") Then
+            On Error Resume Next ' Resume next on duplicate error
+            If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+            wires.Add cellValue, CStr(cellValue)
+            Err.Clear ' Reset error handling
+    
+        Else
+            ' Check if the cell value starts with "CBL" for cables
+            If Left(cellValue, 3) = "CBL" Then
+                On Error Resume Next ' Resume next on duplicate error
+                cables.Add cellValue, CStr(cellValue)
+                If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                Err.Clear ' Reset error handling
+    
+            Else
+                ' Check if the cell value starts with any of the specified device designators
+                Select Case Left(cellValue, 2)
+                    Case "FU"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesFU.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "PE"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPE.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "PX"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPX.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "TB"
+                        On Error Resume Next ' Resume next
+                        devicesTB.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                End Select
+    
+                Select Case Left(cellValue, 3)
+                    Case "FAN"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesFAN.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "MDR"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesMDR.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "MTR"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesMTR.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "PWS"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPWS.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "SOL"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesSOL.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                End Select
+    
+                Select Case Left(cellValue, 4)
+                    Case "DISC"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesDISC.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                End Select
+            End If
+        End If
+        
+NextIteration:
+    Next cell
+    
+    ' Remove all existing data from the worksheet except the collection data
+    ws.Cells.ClearContents
+    
+    ' Write the collections to the appropriate columns
+    WriteCollection ws.Range("A11"), wires
+    WriteCollection ws.Range("B11"), cables
+    WriteCollection ws.Range("C11"), devicesDISC
+    WriteCollection ws.Range("D11"), devicesFAN
+    WriteCollection ws.Range("E11"), devicesFU
+    WriteCollection ws.Range("F11"), devicesMDR
+    WriteCollection ws.Range("G11"), devicesMTR
+    WriteCollection ws.Range("H11"), devicesPE
+    WriteCollection ws.Range("I11"), devicesPWS
+    WriteCollection ws.Range("J11"), devicesPX
+    WriteCollection ws.Range("K11"), devicesSOL
+    WriteCollection ws.Range("L11"), devicesTB
+    
+    ' Declare the rng variable
+    Dim rng As Range
+
+    ' Determine the last used row in column A
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    ' Loop through each column and sort the range containing data (excluding headers)
+    For Each rng In ws.Range("A11:L" & lastRow).Columns
+        If WorksheetFunction.CountA(rng) > 1 Then
+            ' Sort the column
+            rng.Sort Key1:=rng.Cells(1), Order1:=xlAscending, Header:=xlYes, _
+                DataOption1:=xlSortTextAsNumbers, MatchCase:=False, SortMethod:=xlPinYin
+        End If
+    Next rng
+
+    ' Center align every cell on the worksheet
+    ws.Cells.HorizontalAlignment = xlCenter
+    
+    ' Add headers to each column if they don't already exist
+    headersRange.Value = Array("WIRES", "CABLES", "DISCONNECTS", "FANS", "FUSE HOLDERS", _
+                               "MOTOR CONTROLLERS", "MOTORS", "PHOTO-EYES", "POWER SUPPLIES", _
+                               "PROXIMITY SENSORS", "SOLENOIDS", "TERMINAL BLOCKS")
+    
+    ' Set header font style and size
+    headersRange.Font.Bold = True
+    headersRange.Font.Size = 12
+    
+    ' Set column widths to 165 pixels
+    ws.Columns("A:Z").ColumnWidth = 23
+    
+    ' Set the buttonsAdded flag to False initially
+    buttonsAdded = False
+    
+    ' Clean up
+    Set wires = Nothing
+    Set cables = Nothing
+    Set devicesDISC = Nothing
+    Set devicesFAN = Nothing
+    Set devicesFU = Nothing
+    Set devicesMDR = Nothing
+    Set devicesMTR = Nothing
+    Set devicesPE = Nothing
+    Set devicesPWS = Nothing
+    Set devicesPX = Nothing
+    Set devicesSOL = Nothing
+    Set devicesTB = Nothing
+    Set dataRange = Nothing
+    Set headersRange = Nothing
+    Set ws = Nothing
+    Set processedCells = Nothing
+    
+    ' Enable screen updating and events
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    
+    ' Call the completion subroutine
+    Call OrganizeValuesCompleted
+End Sub
+
+Sub OrganizeValuesCompleted()
+    ' Display completion message
+    MsgBox "Data organization complete.", vbInformation
+    
+    ' Reset the flag variable
+    organizeValuesCompletedFlag = False
+    
+    ' Close the UserForm
+    UserForm1.Hide
+End Sub
+
+Function IsInCollection(coll As Collection, item As Variant) As Boolean
+    On Error Resume Next
+    IsInCollection = Not coll(item) Is Nothing
+    On Error GoTo 0
+End Function
+
+' AddButtons subroutine
+Sub AddButtons()
+    If buttonsAdded = True Then Exit Sub ' Exit if buttons are already added
+    
+    Dim ws As Worksheet
+    Dim rng As Range
+    Dim rngAddress As String
+    Dim button As Shape ' Use Shape object for buttons
+    Dim col As Long ' Counter variable for columns
+    Dim buttonTop As Double
+    
+    Set ws = ThisWorkbook.Worksheets("Import") ' Replace "Sheet#" with your actual sheet name
+    Set rng = ws.Range("A7:L8") ' Adjust the range to the two rows where you want to add buttons
+    
+    buttonTop = rng.Cells(2).Top ' Set the top position for the buttons
+    
+    For col = 1 To 12 ' Loop through columns 1 to 12
+    Set button = ws.Shapes.AddFormControl(xlButtonControl, rng.Columns(col).Left, buttonTop, rng.Columns(col).Width, rng.Columns(col).Height)
+    With button
+        .Name = "Button" & (col + 3) 'Set a unique name for each button
+        .TextFrame2.TextRange.Text = "Send to Export" ' Set the button text
+        .Placement = xlMoveAndSize ' Set the button placement to move and size with cells
+        .LockAspectRatio = msoFalse ' Allow the button to resize freely
+        .Left = rng.Columns(col).Left + (rng.Columns(col).Width - .Width) / 2
+        .Top = buttonTop + (rng.Columns(col).Height - .Height) / 2 ' Center the button vertically within the row
+        .Visible = False ' Hide the button initially
+    End With
+    
+    ' Assign a specific subroutine for each button based on column
+    button.OnAction = "SendToExport"
+Next col
+    
+    buttonsAdded = True ' Set the buttonsAdded flag to True
+    
+    ' Update button states after importing data
+    UpdateButtonStates
+End Sub
+
+Sub WriteCollection(rng As Range, coll As Collection)
+    Dim item As Variant
+    Dim i As Integer
+
+    Debug.Print "Writing collection to range: " & rng.Address
+
+    i = 1
+    For Each item In coll
+        Debug.Print "Writing item " & i & ": " & item
+        rng.Offset(i - 1).Value = item
+        i = i + 1
+    Next item
+    
+    ' Update button states after importing data
+    UpdateButtonStates
+End Sub
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    UpdateButtonStates
+End Sub
+
+Sub UpdateButtonStates()
+    Dim wsSource As Worksheet
+    Dim button As Object
+    Dim lastRow As Long
+    Dim buttonCol As Integer
+    
+    Set wsSource = ThisWorkbook.Sheets("Import")
+    
+    ' Update button states based on data availability
+    importDataAvailable = (wsSource.Cells(wsSource.Rows.Count, 1).End(xlUp).Row >= 11)
+    organizeDataAvailable = (organizeValuesCompletedFlag And importDataAvailable)
+    clearDataAvailable = (importDataAvailable)
+
+    ' Enable or disable buttons based on data availability
+    wsSource.OLEObjects("CommandButton1").Enabled = True
+    wsSource.OLEObjects("CommandButton2").Enabled = organizeDataAvailable
+    wsSource.OLEObjects("CommandButton3").Enabled = clearDataAvailable
+    
+    ' Loop through the command buttons and check if there is data in their respective columns
+    For Each button In wsSource.OLEObjects
+        If button.Name Like "CommandButton*" Then
+            ' Skip CommandButton1, CommandButton2, and CommandButton3
+            If Not (button.Name Like "CommandButton[1-3]") Then
+                buttonCol = button.TopLeftCell.column
+                lastRow = wsSource.Cells(wsSource.Rows.Count, buttonCol).End(xlUp).Row
+                
+                ' Disable the button if no data is present or if OrganizeValues has not been completed successfully
+                button.Enabled = (lastRow >= 11 And organizeValuesCompletedFlag)
+            End If
+        End If
+    Next button
+End Sub
