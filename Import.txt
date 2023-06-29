@@ -51,6 +51,9 @@ Sub importData()
     Dim buttonOrganize As Shape
     Set buttonOrganize = ws.Shapes("CommandButton2")
     buttonOrganize.OLEFormat.Object.Enabled = True
+    
+    ' After importing data
+    MsgBox "Data has been imported successfully.", vbInformation
 End Sub
 
 Private Sub CommandButton2_Click()
@@ -147,6 +150,21 @@ End Sub
 
 Private Sub CommandButton15_Click()
     SendToExport Me.CommandButton15.Name
+    
+End Sub
+
+Private Sub CommandButton16_Click()
+    SendToExport Me.CommandButton16.Name
+    
+End Sub
+
+Private Sub CommandButton17_Click()
+    SendToExport Me.CommandButton17.Name
+    
+End Sub
+
+Private Sub CommandButton18_Click()
+    SendToExport Me.CommandButton18.Name
     
 End Sub
 
