@@ -45,14 +45,10 @@ Sub importData()
 End Sub
 
 Sub RunRoutine()
-    ' Show the UserForm
-    UserForm1.Show
     
     ' Call the OrganizeValues subroutine to run the routine
     OrganizeValues
-    
-    ' Close the UserForm
-    Unload UserForm1
+
 End Sub
 
 Sub ClearContents()
