@@ -23,9 +23,12 @@ Sub OrganizeValues()
     Dim devicesFU As Collection
     Dim devicesMDR As Collection
     Dim devicesMTR As Collection
+    Dim devicesPB As Collection
     Dim devicesPE As Collection
+    Dim devicesPS As Collection
     Dim devicesPWS As Collection
     Dim devicesPX As Collection
+    Dim devicesRECP As Collection
     Dim devicesSOL As Collection
     Dim devicesTB As Collection
     Dim processedCells As Collection ' Collection to store processed cell addresses
@@ -43,7 +46,7 @@ Sub OrganizeValues()
     If Not IsEmpty(headersRange.Cells(1)) Then
         ' Headers already exist, exclude them from the organization process
         lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row ' Recalculate the lastRow value
-        Set dataRange = ws.Range("A11:L" & lastRow)
+        Set dataRange = ws.Range("A11:O" & lastRow)
     Else
         ' Headers do not exist, set the headers range to Row 10
         Set headersRange = ws.Rows(10)
@@ -57,20 +60,17 @@ Sub OrganizeValues()
     Set devicesFU = New Collection
     Set devicesMDR = New Collection
     Set devicesMTR = New Collection
+    Set devicesPB = New Collection
     Set devicesPE = New Collection
+    Set devicesPS = New Collection
     Set devicesPWS = New Collection
     Set devicesPX = New Collection
+    Set devicesRECP = New Collection
     Set devicesSOL = New Collection
     Set devicesTB = New Collection
     
     ' Initialize the collection to keep track of processed cells
     Set processedCells = New Collection
-    
-    ' Set the maximum progress value
-    maxProgress = 100
-    
-    ' Show the UserForm
-    UserForm1.Show (False) ' Use Show (False) to keep the form modeless
     
     ' Schedule the execution of the OrganizeValuesInBackground subroutine
     Application.OnTime Now + TimeValue("00:00:01"), "OrganizeValuesInBackground"
@@ -97,9 +97,12 @@ Sub OrganizeValuesInBackground()
     Dim devicesFU As Collection
     Dim devicesMDR As Collection
     Dim devicesMTR As Collection
+    Dim devicesPB As Collection
     Dim devicesPE As Collection
+    Dim devicesPS As Collection
     Dim devicesPWS As Collection
     Dim devicesPX As Collection
+    Dim devicesRECP As Collection
     Dim devicesSOL As Collection
     Dim devicesTB As Collection
     Dim processedCells As Collection ' Collection to store processed cell addresses
@@ -118,7 +121,7 @@ Sub OrganizeValuesInBackground()
     If Not IsEmpty(headersRange.Cells(1)) Then
         ' Headers already exist, exclude them from the organization process
         lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row ' Recalculate the lastRow value
-        Set dataRange = ws.Range("A11:L" & lastRow)
+        Set dataRange = ws.Range("A11:O" & lastRow)
     Else
         ' Headers do not exist, set the headers range to Row 10
         Set headersRange = ws.Rows(10)
@@ -132,23 +135,20 @@ Sub OrganizeValuesInBackground()
     Set devicesFU = New Collection
     Set devicesMDR = New Collection
     Set devicesMTR = New Collection
+    Set devicesPB = New Collection
     Set devicesPE = New Collection
+    Set devicesPS = New Collection
     Set devicesPWS = New Collection
     Set devicesPX = New Collection
+    Set devicesRECP = New Collection
     Set devicesSOL = New Collection
     Set devicesTB = New Collection
     
     ' Initialize the collection to keep track of processed cells
     Set processedCells = New Collection
     
-    ' Set the maximum progress value
-    maxProgress = 100
-    
     ' Count the total number of cells to process
     totalCells = dataRange.Cells.Count
-    
-    ' Show the UserForm
-    UserForm1.Show (False) ' Use Show (False) to keep the form modeless
     
     ' Loop through each cell in the data range
     For Each cell In dataRange
@@ -180,9 +180,21 @@ Sub OrganizeValuesInBackground()
             Else
                 ' Check if the cell value starts with any of the specified device designators
                 Select Case Left(cellValue, 2)
+                    Case "EM"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPE.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+                    
                     Case "FU"
                         On Error Resume Next ' Resume next on duplicate error
                         devicesFU.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "PB"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPB.Add cellValue, CStr(cellValue)
                         If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
                         Err.Clear ' Reset error handling
     
@@ -192,12 +204,24 @@ Sub OrganizeValuesInBackground()
                         If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
                         Err.Clear ' Reset error handling
     
+                    Case "PS"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPS.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
                     Case "PX"
                         On Error Resume Next ' Resume next on duplicate error
                         devicesPX.Add cellValue, CStr(cellValue)
                         If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
                         Err.Clear ' Reset error handling
     
+                    Case "RC"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPE.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+                    
                     Case "TB"
                         On Error Resume Next ' Resume next
                         devicesTB.Add cellValue, CStr(cellValue)
@@ -207,6 +231,12 @@ Sub OrganizeValuesInBackground()
                 End Select
     
                 Select Case Left(cellValue, 3)
+                    Case "EPB"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPB.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+                    
                     Case "FAN"
                         On Error Resume Next ' Resume next on duplicate error
                         devicesFAN.Add cellValue, CStr(cellValue)
@@ -222,6 +252,12 @@ Sub OrganizeValuesInBackground()
                     Case "MTR"
                         On Error Resume Next ' Resume next on duplicate error
                         devicesMTR.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
+    
+                    Case "PBL"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesPB.Add cellValue, CStr(cellValue)
                         If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
                         Err.Clear ' Reset error handling
     
@@ -245,6 +281,12 @@ Sub OrganizeValuesInBackground()
                         devicesDISC.Add cellValue, CStr(cellValue)
                         If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
                         Err.Clear ' Reset error handling
+                    
+                    Case "RECP"
+                        On Error Resume Next ' Resume next on duplicate error
+                        devicesRECP.Add cellValue, CStr(cellValue)
+                        If Err.Number = 0 And Not IsInCollection(processedCells, cell.Address) Then processedCells.Add cell.Address ' Add cell address to processedCells if not already present
+                        Err.Clear ' Reset error handling
     
                 End Select
             End If
@@ -264,11 +306,14 @@ NextIteration:
     WriteCollection ws.Range("E11"), devicesFU
     WriteCollection ws.Range("F11"), devicesMDR
     WriteCollection ws.Range("G11"), devicesMTR
-    WriteCollection ws.Range("H11"), devicesPE
-    WriteCollection ws.Range("I11"), devicesPWS
-    WriteCollection ws.Range("J11"), devicesPX
-    WriteCollection ws.Range("K11"), devicesSOL
-    WriteCollection ws.Range("L11"), devicesTB
+    WriteCollection ws.Range("H11"), devicesPB
+    WriteCollection ws.Range("I11"), devicesPE
+    WriteCollection ws.Range("J11"), devicesPS
+    WriteCollection ws.Range("K11"), devicesPWS
+    WriteCollection ws.Range("L11"), devicesPX
+    WriteCollection ws.Range("M11"), devicesRECP
+    WriteCollection ws.Range("N11"), devicesSOL
+    WriteCollection ws.Range("O11"), devicesTB
     
     ' Declare the rng variable
     Dim rng As Range
@@ -277,7 +322,7 @@ NextIteration:
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
 
     ' Loop through each column and sort the range containing data (excluding headers)
-    For Each rng In ws.Range("A11:L" & lastRow).Columns
+    For Each rng In ws.Range("A11:O" & lastRow).Columns
         If WorksheetFunction.CountA(rng) > 1 Then
             ' Sort the column
             rng.Sort Key1:=rng.Cells(1), Order1:=xlAscending, Header:=xlYes, _
@@ -290,8 +335,8 @@ NextIteration:
     
     ' Add headers to each column if they don't already exist
     headersRange.Value = Array("WIRES", "CABLES", "DISCONNECTS", "FANS", "FUSE HOLDERS", _
-                               "MOTOR CONTROLLERS", "MOTORS", "PHOTO-EYES", "POWER SUPPLIES", _
-                               "PROXIMITY SENSORS", "SOLENOIDS", "TERMINAL BLOCKS")
+                               "MOTOR CONTROLLERS", "MOTORS", "PUSH BUTTONS", "PHOTO-EYES", "PRESSURE SWITCHES", "POWER SUPPLIES", _
+                               "PROXIMITY SENSORS", "RECEPTACALS", "SOLENOIDS", "TERMINAL BLOCKS")
     
     ' Set header font style and size
     headersRange.Font.Bold = True
@@ -311,9 +356,12 @@ NextIteration:
     Set devicesFU = Nothing
     Set devicesMDR = Nothing
     Set devicesMTR = Nothing
+    Set devicesPB = Nothing
     Set devicesPE = Nothing
+    Set devicesPS = Nothing
     Set devicesPWS = Nothing
     Set devicesPX = Nothing
+    Set devicesRECP = Nothing
     Set devicesSOL = Nothing
     Set devicesTB = Nothing
     Set dataRange = Nothing
@@ -331,13 +379,11 @@ End Sub
 
 Sub OrganizeValuesCompleted()
     ' Display completion message
-    MsgBox "Data organization complete.", vbInformation
+    MsgBox "Data has been organized successfully.", vbInformation
     
     ' Reset the flag variable
     organizeValuesCompletedFlag = False
     
-    ' Close the UserForm
-    UserForm1.Hide
 End Sub
 
 Function IsInCollection(coll As Collection, item As Variant) As Boolean
